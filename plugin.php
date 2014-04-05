@@ -15,42 +15,42 @@ ET::$pluginInfo["StopForumSpam"] = array(
 );
 
 class ETPlugin_StopForumSpam extends ETPlugin {
-    
+
 	const APIDOMAIN = 'http://www.stopforumspam.com/api';
-	
+
 	public function handler_memberModel_createAfter($sender, $values)
 	{
 		// check wheater the user is a spammer
 		$email = $values['email'];
-		$ip = $_SERVER['REMOTE_ADDR']; 
-		
+		$ip = $_SERVER['REMOTE_ADDR'];
+
 		$query_string = "ip=".$ip."&email=".trim($email)."&f=json";
-		
+
 		$result = $this->request($query_string);
-		
+
 		$result = json_decode($result, true);
-		
+
 		if (is_array($result) && isset($result['success']) && $result['success'] == 1) {
 			unset($result['success']);
-			
+
 			foreach ($result AS $value) {
 				if (isset($value['appears']) && $value['appears'] > 0) {
 					// suspend
 					ET::memberModel()->setGroups(ET::memberModel()->getById($values['memberId']), ACCOUNT_SUSPENDED);
-					
-					return; 
+
+					return;
 				}
 			}
 		}
 	}
-	
+
 	public function request($query_string) {
-		$curl = curl_init(self::APIDOMAIN."?".$query_string); 
+		$curl = curl_init(self::APIDOMAIN."?".$query_string);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($curl, 'CURLOPT_USERAGEN', "CURL (StopForumSpam; EsoTalk/".ESOTALK_VERSION.")");
+		curl_setopt($curl, CURLOPT_USERAGENT, "CURL (StopForumSpam; EsoTalk/".ESOTALK_VERSION.")");
 		$res = curl_exec($curl);
-		curl_close($curl); 
-		
-		return $res; 
+		curl_close($curl);
+
+		return $res;
 	}
 }
